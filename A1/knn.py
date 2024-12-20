@@ -60,7 +60,9 @@ def compute_distances_two_loops(x_train: torch.Tensor, x_test: torch.Tensor):
     # functions from torch.nn or torch.nn.functional.                        #
     ##########################################################################
     # Replace "pass" statement with your code
-    pass
+    for i in range(num_train):
+        for j in range(num_test):
+            dists[i, j] = torch.sum((x_train[i] - x_test[j])**2)
     ##########################################################################
     #                           END OF YOUR CODE                             #
     ##########################################################################
@@ -94,9 +96,7 @@ def compute_distances_one_loop(x_train: torch.Tensor, x_test: torch.Tensor):
     """
     # Initialize dists to be a tensor of shape (num_train, num_test) with the
     # same datatype and device as x_train
-    num_train = x_train.shape[0]
-    num_test = x_test.shape[0]
-    dists = x_train.new_zeros(num_train, num_test)
+    
     ##########################################################################
     # TODO: Implement this function using only a single loop over x_train.   #
     #                                                                        #
@@ -104,7 +104,9 @@ def compute_distances_one_loop(x_train: torch.Tensor, x_test: torch.Tensor):
     # functions from torch.nn or torch.nn.functional.                        #
     ##########################################################################
     # Replace "pass" statement with your code
-    pass
+    print(x_train.shape)
+    print(x_test.shape)
+    # dists = torch.sum((x_train.view(1,-1) - x_test.view(-1,1))**2, dim=2)
     ##########################################################################
     #                           END OF YOUR CODE                             #
     ##########################################################################
@@ -156,7 +158,7 @@ def compute_distances_no_loops(x_train: torch.Tensor, x_test: torch.Tensor):
     #       and a matrix multiply.                                           #
     ##########################################################################
     # Replace "pass" statement with your code
-    pass
+    dists = torch.sum((x_train.view(num_train, -1) - x_test.view(num_test, -1))**2, dim=2)
     ##########################################################################
     #                           END OF YOUR CODE                             #
     ##########################################################################
