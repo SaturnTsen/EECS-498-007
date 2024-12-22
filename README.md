@@ -1,16 +1,14 @@
 ### UMich EECS-498-007: Deep Learning for Computer Vision
 
-This is a personal repo for the UMich-EECS-498-007 course assignments and projects, during Dec 2024 - Jan 2025.
+This repository contains my independent work on assignments and projects inspired by the publicly available materials of UMich EECS-498-007, completed during December 2024 - January 2025. All work was done personally in my dormitory at École Polytechnique over the Christmas holiday.
 
-This coursework is done by myself in my dormitory in [Ecole Polytechnique](https://www.polytechnique.edu/) during the wonderful Christmas holiday, and is not related to UMich EECS-498-007 course nor with Ecole Polytechnique.
-
-This repo is not intended to be used for plagiarism or cheating purposes.
+This repository is not officially affiliated with the University of Michigan or École Polytechnique and is solely for personal learning and exploration. It is not intended for plagiarism or academic dishonesty.
 
 Special thanks to the University of Michigan for making this valuable resource available to the public, and to [CSDIY](https://csdiy.wiki/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/EECS498-007/) for curating and organizing these resources, which helped me discover and access this course.
 
 @Credits: [EECS 498.007](https://web.eecs.umich.edu/~justincj/teaching/eecs498/WI2022/)
 
-For lecture notes, please visit [my personal blog](http://localhost:8086/blog/categories/)
+For additional lecture notes and insights, please visit [my personal blog](http://localhost:8086/blog/categories/)
 
 #### **Course Overview**  
 EECS-498 is an undergraduate/graduate course focused on the fundamentals of computer vision and deep learning. The course covers a wide range of topics, including convolutional neural networks (CNNs), recurrent neural networks (RNNs), generative adversarial networks (GANs). The assignments and projects are implemented **from scratch** using PyTorch.
