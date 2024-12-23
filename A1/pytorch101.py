@@ -1,8 +1,12 @@
+# %%
+
 import torch
 
 # Type hints.
 from typing import List, Tuple
 from torch import Tensor
+
+# %%
 
 
 def hello():
@@ -27,7 +31,7 @@ def create_sample_tensor() -> Tensor:
     #                     TODO: Implement this function                      #
     ##########################################################################
     # Replace "pass" statement with your code
-    x = torch.zeros(3,2)
+    x = torch.zeros(3, 2)
     x[0, 1] = 10
     x[1, 0] = 100
     ###########################################################################
@@ -95,7 +99,7 @@ def count_tensor_elements(x: Tensor) -> int:
     ##########################################################################
     # Replace "pass" statement with your code
     num_elements = 1
-    for dim in x.shape: # if x is a scalar, x.shape is an empty tuple
+    for dim in x.shape:  # if x is a scalar, x.shape is an empty tuple
         num_elements *= dim
     ##########################################################################
     #                            END OF YOUR CODE                            #
@@ -235,7 +239,7 @@ def slice_assignment_practice(x: Tensor) -> Tensor:
     ##########################################################################
     # Replace "pass" statement with your code
     x[2:4, 4:6] = 5
-    x[:2,2:6] = 2
+    x[:2, 2:6] = 2
     x[2:4, 1:4:2] = 4
     x[2:4, :3:2] = 3
     x[:2, 1:2] = 1
@@ -326,7 +330,7 @@ def take_one_elem_per_col(x: Tensor) -> Tensor:
     #                      TODO: Implement this function                     #
     ##########################################################################
     # Replace "pass" statement with your code
-    y = x[[1,0,3],[0,1,2]]
+    y = x[[1, 0, 3], [0, 1, 2]]
     ##########################################################################
     #                            END OF YOUR CODE                            #
     ##########################################################################
@@ -469,7 +473,7 @@ def zero_row_min(x: Tensor) -> Tensor:
     ##########################################################################
     # Replace "pass" statement with your code
     y = x.clone()
-    y[range(x.shape[0]), torch.argmin(x, dim=1)] = 0
+    y[torch.range(x.shape[0]), torch.argmin(x, dim=1)] = 0
     ##########################################################################
     #                            END OF YOUR CODE                            #
     ##########################################################################
@@ -594,7 +598,8 @@ def normalize_columns(x: Tensor) -> Tensor:
     ##########################################################################
     # Replace "pass" statement with your code
     y = x.clone()
-    y = (y - torch.mean(y, dim=0, keepdim=True))/(torch.std(y, dim=0, keepdim=True))
+    y = (y - torch.mean(y, dim=0, keepdim=True)) / \
+        (torch.std(y, dim=0, keepdim=True))
     print(x)
     ##########################################################################
     #                            END OF YOUR CODE                            #
@@ -651,6 +656,7 @@ def mm_on_gpu(x: Tensor, w: Tensor) -> Tensor:
     return y
 
 
+# %%
 def challenge_mean_tensors(xs: List[Tensor], ls: Tensor) -> Tensor:
     """
     Compute mean of each tensor in a given list of tensors.
@@ -678,11 +684,26 @@ def challenge_mean_tensors(xs: List[Tensor], ls: Tensor) -> Tensor:
     # mean values as a tensor in `y`.                                        #
     ##########################################################################
     # Replace "pass" statement with your code
-    pass
+    X = torch.cat(xs)
+    cumsum_X = torch.cumsum(X, dim=0)
+    indices = torch.cumsum(ls, dim=0) - 1
+    cumsum_y = torch.cat((torch.zeros(1), cumsum_X[indices]))
+    y = torch.diff(cumsum_y, dim=0) / ls
     ##########################################################################
     #                            END OF YOUR CODE                            #
     ##########################################################################
     return y
+
+
+# %%
+if __name__ == "__main__":
+    xs = [torch.tensor([1, 2, 3]),
+          torch.tensor([4, 0]),
+          torch.tensor([6, 7, 8, 9])]
+    ls = torch.tensor([3, 2, 4])
+    print(challenge_mean_tensors(xs, ls))
+
+# %%
 
 
 def challenge_get_uniques(x: torch.Tensor) -> Tuple[Tensor, Tensor]:
@@ -718,8 +739,140 @@ def challenge_get_uniques(x: torch.Tensor) -> Tuple[Tensor, Tensor]:
     # O(N) memory.                                                           #
     ##########################################################################
     # Replace "pass" statement with your code
-    pass
+    if x.numel() == 0:
+        return torch.tensor([], dtype=torch.int64), \
+            torch.tensor([], dtype=torch.int64)
+    sorted_x, indices = torch.sort(x)
+    diffs = torch.cat((torch.tensor([1]), torch.diff(sorted_x, dim=0)))
+    mask = (diffs != 0)
+    uniques = sorted_x[mask]
+    indices = indices[mask]
     ##########################################################################
     #                            END OF YOUR CODE                            #
     ##########################################################################
     return uniques, indices
+
+# %%
+# Test cases
+
+
+def test_challenge_get_uniques():
+    print("Running Tests...\n")
+
+    # Test 1: Basic Case
+    x = torch.tensor([3, 1, 2, 1, 3, 4])
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 1 - Basic Case:")
+    print("Input:", x)
+    print("Uniques:", uniques)
+    print("Indices:", indices)
+    assert torch.equal(uniques, torch.tensor([1, 2, 3, 4]))
+    assert torch.equal(x[indices], uniques)
+    print("✅ Passed!\n")
+
+    # Test 2: All Unique Case
+    x = torch.tensor([5, 3, 1, 4, 2])
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 2 - All Unique:")
+    print("Input:", x)
+    print("Uniques:", uniques)
+    print("Indices:", indices)
+    assert torch.equal(uniques, torch.tensor([1, 2, 3, 4, 5]))
+    assert torch.equal(x[indices], uniques)
+    print("✅ Passed!\n")
+
+    # Test 3: All Duplicate Case
+    x = torch.tensor([7, 7, 7, 7])
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 3 - All Duplicates:")
+    print("Input:", x)
+    print("Uniques:", uniques)
+    print("Indices:", indices)
+    assert torch.equal(uniques, torch.tensor([7]))
+    assert torch.equal(x[indices], uniques)
+    print("✅ Passed!\n")
+
+    # Test 4: Empty Tensor
+    x = torch.tensor([], dtype=torch.int64)
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 4 - Empty Tensor:")
+    print("Input:", x)
+    print("Uniques:", uniques)
+    print("Indices:", indices)
+    assert uniques.numel() == 0
+    assert indices.numel() == 0
+    print("✅ Passed!\n")
+
+    # Test 5: Single Element
+    x = torch.tensor([42])
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 5 - Single Element:")
+    print("Input:", x)
+    print("Uniques:", uniques)
+    print("Indices:", indices)
+    assert torch.equal(uniques, torch.tensor([42]))
+    assert torch.equal(x[indices], uniques)
+    print("✅ Passed!\n")
+
+    # Test 6: Negative Numbers
+    x = torch.tensor([-3, -1, -2, -1, -3, -4])
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 6 - Negative Numbers:")
+    print("Input:", x)
+    print("Uniques:", uniques)
+    print("Indices:", indices)
+    assert torch.equal(uniques, torch.tensor([-4, -3, -2, -1]))
+    assert torch.equal(x[indices], uniques)
+    print("✅ Passed!\n")
+
+    # Test 7: Mixed Positive and Negative Numbers
+    x = torch.tensor([-1, 2, -3, 4, -1, 2])
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 7 - Mixed Positive and Negative Numbers:")
+    print("Input:", x)
+    print("Uniques:", uniques)
+    print("Indices:", indices)
+    assert torch.equal(uniques, torch.tensor([-3, -1, 2, 4]))
+    assert torch.equal(x[indices], uniques)
+    print("✅ Passed!\n")
+
+    # Test 8: Non-Contiguous Tensor (using slicing)
+    x = torch.tensor([1, 2, 3, 4, 5])[::2]  # Sliced tensor: [1, 3, 5]
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 8 - Non-Contiguous Tensor:")
+    print("Input:", x)
+    print("Uniques:", uniques)
+    print("Indices:", indices)
+    assert torch.equal(uniques, torch.tensor([1, 3, 5]))
+    assert torch.equal(x[indices], uniques)
+    print("✅ Passed!\n")
+
+    # Test 9: Large Tensor
+    x = torch.randint(-100, 100, (10000,))
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 9 - Large Tensor:")
+    print("Input Length:", len(x))
+    print("Number of Uniques:", len(uniques))
+    assert len(uniques) <= len(x)
+    assert torch.equal(x[indices], uniques)
+    print("✅ Passed!\n")
+
+    # Test 10: Random Tensor with Many Duplicates
+    x = torch.tensor([1] * 5000 + [2] * 3000 + [3] * 2000)
+    uniques, indices = challenge_get_uniques(x)
+    print("Test 10 - Random Tensor with Many Duplicates:")
+    print("Input Length:", len(x))
+    print("Uniques:", uniques)
+    print("Indices:", indices)
+    assert torch.equal(uniques, torch.tensor([1, 2, 3]))
+    assert torch.equal(x[indices], uniques)
+    print("✅ Passed!\n")
+
+    print("🎯 All Tests Passed Successfully!")
+
+
+# Run the tests
+if __name__ == "__main__":
+    test_challenge_get_uniques()
+
+# %%

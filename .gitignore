@@ -3,3 +3,4 @@ __pycache__
 *.tar.gz
 cifar-10-batches-py/
 *.pt
+mnist_dataset/

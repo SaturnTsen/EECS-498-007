@@ -163,9 +163,6 @@ def compute_distances_no_loops(x_train: torch.Tensor, x_test: torch.Tensor):
     # Replace "pass" statement with your code
     dists = torch.sum((x_train.view(num_train, 1, -1) -
                        x_test.view(num_test, 1, -1).permute(1, 0, 2))**2, dim=2)
-    # dists = torch.cdist(x_train.view(num_train, -1),
-    #                     x_test.view(num_test, -1), p=2)
-
     ##########################################################################
     #                           END OF YOUR CODE                             #
     ##########################################################################
@@ -209,6 +206,7 @@ def predict_labels(dists: torch.Tensor, y_train: torch.Tensor, k: int = 1):
     ##########################################################################
     # Replace "pass" statement with your code
     neighbor_indices = torch.topk(dists, k=k, dim=0, largest=False).indices
+    # torch.topk returns a tuple of (values, indices)
     y_neighbors = y_train[neighbor_indices]
     y_pred = torch.mode(y_neighbors, 0).values
     ##########################################################################

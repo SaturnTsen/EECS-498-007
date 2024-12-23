@@ -157,6 +157,7 @@ def colormap_to_weight(colormap, color):
 def get_w1(img_path):
     templates = []
     neural_net = cv2.imread(img_path)
+    print(neural_net.shape)
     neural_net = cv2.cvtColor(neural_net, cv2.COLOR_BGR2RGB)
     neural_net = cv2.resize(
         neural_net, (900, 800), interpolation=cv2.INTER_AREA
@@ -164,7 +165,7 @@ def get_w1(img_path):
     X_tl = [150] * 7
     Y_tl = [150 + 75 * i for i in range(7)]
     for x, y in zip(X_tl, Y_tl):
-        t = neural_net[y + 4 : y + 60, x + 4 : x + 60, :]
+        t = neural_net[y + 4: y + 60, x + 4: x + 60, :]
         t = cv2.resize(t, (28, 28), interpolation=cv2.INTER_AREA)
 
         t_one_channel = np.zeros((t.shape[0], t.shape[0]))
@@ -182,7 +183,7 @@ def get_w2(img_path):
     neural_net = cv2.resize(
         neural_net, (900, 800), interpolation=cv2.INTER_AREA
     )
-    w2 = neural_net[165 : 10 * 32 + 165 : 32, 405 : 7 * 32 + 405 : 32, :]
+    w2 = neural_net[165: 10 * 32 + 165: 32, 405: 7 * 32 + 405: 32, :]
     w2_one_channel = np.zeros((w2.shape[0], w2.shape[1]))
     for w in range(w2.shape[0]):
         for h in range(w2.shape[1]):
