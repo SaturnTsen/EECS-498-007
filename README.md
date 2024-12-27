@@ -15,4 +15,5 @@ EECS-498 is an undergraduate/graduate course focused on the fundamentals of comp
 
 #### **Assignment Overview**
 - **Assignment 1**: Pytorch 101, KNN from scratch.
-- **Assignment 22**: Linear classification, Softmax, SVM, Two-layer neural network, including gradient calculus.
+- **Assignment 22**: Linear classification, Softmax, SVM, Two-layer neural network, including gradient calculus and backpropagation, hyperparameter tuning, and optimization.
+- **Assignment 3**: Fully connected neural network, convolutional neural network, batch normalization, dropout, pooling, Sanity check, overfit small data.
