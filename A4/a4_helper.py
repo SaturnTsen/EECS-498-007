@@ -1,3 +1,4 @@
+from torch.utils.tensorboard import SummaryWriter
 from typing import Optional
 
 import json
@@ -62,11 +63,12 @@ class VOC2007DetectionTiny(torch.utils.data.Dataset):
         }
 
         # Load instances from JSON file:
+        print(f"Loading VOC 2007 {split} dataset...")
         self.instances = json.load(
             open(os.path.join(dataset_dir, f"voc07_{split}.json"))
         )
         self.dataset_dir = dataset_dir
-
+        print(f"Loaded")
         # Define a transformation function for image: Resize the shorter image
         # edge then take a center crop (optional) and normalize.
         _transforms = [
@@ -124,7 +126,8 @@ class VOC2007DetectionTiny(torch.utils.data.Dataset):
 
         # Collect a list of GT boxes: (N, 4), and GT classes: (N, )
         gt_boxes = torch.tensor([inst["xyxy"] for inst in ann])
-        gt_classes = torch.Tensor([self.class_to_idx[inst["name"]] for inst in ann])
+        gt_classes = torch.Tensor(
+            [self.class_to_idx[inst["name"]] for inst in ann])
         gt_classes = gt_classes.unsqueeze(1)  # (N, 1)
 
         # Record original image size before transforming.
@@ -157,8 +160,10 @@ class VOC2007DetectionTiny(torch.utils.data.Dataset):
 
             # Un-normalize bounding box co-ordinates and shift due to center crop.
             # Clamp to (0, image size).
-            gt_boxes[:, 0] = torch.clamp(gt_boxes[:, 0] * new_width - _x1, min=0)
-            gt_boxes[:, 1] = torch.clamp(gt_boxes[:, 1] * new_height - _y1, min=0)
+            gt_boxes[:, 0] = torch.clamp(
+                gt_boxes[:, 0] * new_width - _x1, min=0)
+            gt_boxes[:, 1] = torch.clamp(
+                gt_boxes[:, 1] * new_height - _y1, min=0)
             gt_boxes[:, 2] = torch.clamp(
                 gt_boxes[:, 2] * new_width - _x1, max=self.image_size
             )
@@ -198,6 +203,7 @@ def train_detector(
     max_iters: int = 5000,
     log_period: int = 20,
     device: str = "cpu",
+    writer: Optional[SummaryWriter] = None,
 ):
     """
     Train the detector. We use SGD with momentum and step decay.
@@ -243,6 +249,12 @@ def train_detector(
         optimizer.step()
         lr_scheduler.step()
 
+        # Log to TensorBoard.
+        if writer is not None:
+            for key, value in losses.items():
+                writer.add_scalar(f"Loss/{key}", value, _iter)
+            writer.add_scalar("Loss/total", total_loss, _iter)
+
         # Print losses periodically.
         if _iter % log_period == 0:
             loss_str = f"[Iter {_iter}][loss: {total_loss:.3f}]"
@@ -268,7 +280,7 @@ def inference_with_detector(
     nms_thresh: float,
     output_dir: Optional[str] = None,
     dtype: torch.dtype = torch.float32,
-    device:str = "cpu",
+    device: str = "cpu",
 ):
 
     # ship model to GPU
@@ -346,11 +358,13 @@ def inference_with_detector(
             ) as f_gt:
                 for b in gt_boxes:
                     f_gt.write(
-                        f"{idx_to_class[b[4].item()]} {b[0]:.2f} {b[1]:.2f} {b[2]:.2f} {b[3]:.2f}\n"
+                        f"{idx_to_class[b[4].item()]} {b[0]:.2f} {b[1]:.2f} {
+                            b[2]:.2f} {b[3]:.2f}\n"
                     )
                 for b in pred_boxes:
                     f_det.write(
-                        f"{idx_to_class[b[4].item()]} {b[5]:.6f} {b[0]:.2f} {b[1]:.2f} {b[2]:.2f} {b[3]:.2f}\n"
+                        f"{idx_to_class[b[4].item()]} {b[5]:.6f} {b[0]:.2f} {
+                            b[1]:.2f} {b[2]:.2f} {b[3]:.2f}\n"
                     )
         else:
             eecs598.utils.detection_visualizer(

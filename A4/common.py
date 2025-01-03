@@ -59,11 +59,12 @@ class DetectorBackboneWithFPN(nn.Module):
         # batches of tensors in NCHW format, that give intermediate features
         # from the backbone network.
         dummy_out = self.backbone(torch.randn(2, 3, 224, 224))
-        dummy_out_shapes = [(key, value.shape) for key, value in dummy_out.items()]
+        dummy_out_shapes = [(key, value.shape)
+                            for key, value in dummy_out.items()]
 
-        print("For dummy input images with shape: (2, 3, 224, 224)")
-        for level_name, feature_shape in dummy_out_shapes:
-            print(f"Shape of {level_name} features: {feature_shape}")
+        # print("For dummy input images with shape: (2, 3, 224, 224)")
+        # for level_name, feature_shape in dummy_out_shapes:
+        #     print(f"Shape of {level_name} features: {feature_shape}")
 
         ######################################################################
         # TODO: Initialize additional Conv layers for FPN.                   #
@@ -81,15 +82,34 @@ class DetectorBackboneWithFPN(nn.Module):
         # This behaves like a Python dict, but makes PyTorch understand that
         # there are trainable weights inside it.
         # Add THREE lateral 1x1 conv and THREE output 3x3 conv layers.
+        in_channel_count = [dummy_out_shapes[i][1][1] for i in range(3)]
         self.fpn_params = nn.ModuleDict()
 
-        # Replace "pass" statement with your code
-        pass
+        for i in range(3, 6):
+            # Create lateral 1x1 conv layers
+            self.fpn_params[f"lateral_{i}"] = nn.Conv2d(
+                in_channel_count[i - 3], out_channels, kernel_size=1, stride=1, padding=0
+            )
+
+            # Create output 3x3 conv layers
+            self.fpn_params[f"output_{i}"] = nn.Sequential(
+                nn.Conv2d(out_channels, out_channels,
+                          kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU(inplace=True))
+
+            # Initialize weights of the layers
+            nn.init.kaiming_normal_(
+                self.fpn_params[f"lateral_{i}"].weight, nonlinearity='relu')
+            nn.init.zeros_(self.fpn_params[f"lateral_{i}"].bias)
+            nn.init.kaiming_normal_(
+                self.fpn_params[f"output_{i}"][0].weight, nonlinearity='relu')
+            nn.init.zeros_(self.fpn_params[f"output_{i}"][0].bias)
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
 
-    @property
+    @ property
     def fpn_strides(self):
         """
         Total stride up to the FPN level. For a fixed ConvNet, these values
@@ -109,9 +129,17 @@ class DetectorBackboneWithFPN(nn.Module):
         # (c3, c4, c5) and FPN conv layers created above.                    #
         # HINT: Use `F.interpolate` to upsample FPN features.                #
         ######################################################################
-
+        # print(images.shape)
+        # print("Hello")
         # Replace "pass" statement with your code
-        pass
+        p5 = self.fpn_params["lateral_5"](backbone_feats["c5"])
+        p4 = self.fpn_params["lateral_4"](backbone_feats["c4"]) + \
+            F.interpolate(p5, scale_factor=2, mode='nearest')
+        p3 = self.fpn_params["lateral_3"](backbone_feats["c3"]) + \
+            F.interpolate(p4, scale_factor=2, mode='nearest')
+        fpn_feats["p5"] = self.fpn_params["output_5"](p5)
+        fpn_feats["p4"] = self.fpn_params["output_4"](p4)
+        fpn_feats["p3"] = self.fpn_params["output_3"](p3)
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
@@ -157,7 +185,38 @@ def get_fpn_location_coords(
         # TODO: Implement logic to get location co-ordinates below.          #
         ######################################################################
         # Replace "pass" statement with your code
-        pass
+        H, W = feat_shape[2], feat_shape[3]
+
+        # About meshgrid:
+        # x = torch.tensor([0, 1, 2])  # x 轴坐标（列方向）
+        # y = torch.tensor([10, 20, 30, 40])  # y 轴坐标（行方向）
+        # torch.meshgrid(x, y, indexing='xy'), \
+        # torch.meshgrid(x, y, indexing='ij')
+        # Out: if we use indexing='xy', x will be horizontal, y will be vertical
+        # ((tensor([[0, 1, 2],
+        #           [0, 1, 2],
+        #           [0, 1, 2],
+        #           [0, 1, 2]]),
+        #  tensor([[10, 10, 10],
+        #          [20, 20, 20],
+        #          [30, 30, 30],
+        #          [40, 40, 40]]))
+        # if we use indexing='ij', x will be vertical, y will be horizontal
+        # (tensor([[0, 0, 0, 0],
+        #          [1, 1, 1, 1],
+        #          [2, 2, 2, 2]]),
+        #  tensor([[10, 20, 30, 40],
+        #          [10, 20, 30, 40],
+        #          [10, 20, 30, 40]])))
+        shift_y = torch.arange(0, H, dtype=dtype,
+                               device=device) * level_stride + level_stride / 2
+        shift_x = torch.arange(0, W, dtype=dtype,
+                               device=device) * level_stride + level_stride / 2
+        shift_y, shift_x = torch.meshgrid(
+            shift_y, shift_x, indexing='ij')
+        coords = torch.stack(
+            (shift_x.reshape(-1), shift_y.reshape(-1)), dim=1)
+        location_coords[level_name] = coords
         ######################################################################
         #                             END OF YOUR CODE                       #
         ######################################################################
@@ -171,7 +230,7 @@ def nms(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float = 0.5):
     Args:
         boxes: Tensor of shape (N, 4) giving top-left and bottom-right coordinates
             of the bounding boxes to perform NMS on.
-        scores: Tensor of shpe (N, ) giving scores for each of the boxes.
+        scores: Tensor of shape (N, ) giving scores for each of the boxes.
         iou_threshold: Discard all overlapping boxes with IoU > iou_threshold
 
     Returns:
@@ -196,7 +255,33 @@ def nms(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float = 0.5):
     # github.com/pytorch/vision/blob/main/torchvision/csrc/ops/cpu/nms_kernel.cpp
     #############################################################################
     # Replace "pass" statement with your code
-    pass
+    _, order = scores.sort(descending=True)
+    keep = []
+    x1, y1, x2, y2 = boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3]
+    areas = (x2 - x1) * (y2 - y1)
+    while order.numel() > 0:
+        i = order[0]  # Index of the box with the highest score
+        keep.append(i.item())  # Add this index to the keep list
+
+        if order.numel() == 1:  # No more boxes to compare
+            break
+
+        # Compute IoU with the remaining boxes
+        xx1 = torch.maximum(x1[i], x1[order[1:]])
+        yy1 = torch.maximum(y1[i], y1[order[1:]])
+        xx2 = torch.minimum(x2[i], x2[order[1:]])
+        yy2 = torch.minimum(y2[i], y2[order[1:]])
+
+        inter_area = torch.maximum(xx2 - xx1, torch.tensor(0)) * \
+            torch.maximum(yy2 - yy1, torch.tensor(0))
+        union_area = areas[i] + areas[order[1:]] - inter_area
+        iou = inter_area / union_area
+
+        # Keep boxes with IoU <= iou_threshold
+        remaining = iou <= iou_threshold
+        order = order[1:][remaining]
+
+    return torch.tensor(keep)
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -221,7 +306,8 @@ def class_spec_nms(
     if boxes.numel() == 0:
         return torch.empty((0,), dtype=torch.int64, device=boxes.device)
     max_coordinate = boxes.max()
-    offsets = class_ids.to(boxes) * (max_coordinate + torch.tensor(1).to(boxes))
+    offsets = class_ids.to(boxes) * (max_coordinate +
+                                     torch.tensor(1).to(boxes))
     boxes_for_nms = boxes + offsets[:, None]
     keep = nms(boxes_for_nms, scores, iou_threshold)
     return keep

@@ -5,3 +5,7 @@ cifar-10-batches-py/
 *.pt
 *.pth
 mnist_dataset/
+*.tar
+*.tmp
+VOCDevkit/
+.idea
